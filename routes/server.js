@@ -11,7 +11,7 @@ const posts = require("./api/posts");
 const admins = require("./api/admins");
 
 ////////////////////////////////////////////////
-const cors = require("cors")({ origin: "http://localhost:3000" });
+const cors = require("cors")();
 ////////////////////////////////////////////////
 
 const app = express();
