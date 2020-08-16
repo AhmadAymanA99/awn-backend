@@ -114,7 +114,7 @@ router.post("/register", (req, res) => {
               pass: Keys.confirmationPassword,
             },
           });
-          var url = `https://awn-backend.herokuapp.com/email/confirmation/${newuser._id}/${newuser.activationTokenEmail}`;
+          var url = `https://awn-app.herokuapp.com/email/confirmation/${newuser._id}/${newuser.activationTokenEmail}`;
           var mailOptions = {
             from: Keys.confirmationEmail,
             to: newuser.email,
