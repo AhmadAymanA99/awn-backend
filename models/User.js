@@ -1,0 +1,114 @@
+const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
+
+// Create Schema
+const UserSchema = new Schema({
+  userID: {
+    type: Schema.Types.ObjectId,
+    required: true,
+  },
+  name: {
+    type: String,
+    required: true,
+  },
+});
+
+const AdminSchema = new Schema({
+  avatar: { type: String },
+  name: {
+    type: String,
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  password: {
+    type: String,
+    required: true,
+  },
+  adminName: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  isAdmin: {
+    type: Boolean,
+    default: true,
+  },
+  numberofAssignedReport: {
+    type: Number,
+    default: 0,
+  },
+});
+
+const RegisteredUserSchema = new Schema({
+  confirmationEmail: {
+    type: Boolean,
+    default: false,
+  },
+  activationTokenEmail: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: mongoose.Types.ObjectId,
+    index: { unique: true },
+  },
+
+  avatar: { type: String },
+  userName: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  name: {
+    type: String,
+  },
+  phone: {
+    type: String,
+    required: true,
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  password: {
+    type: String,
+    required: true,
+  },
+  isBaaned: {
+    type: Boolean,
+    default: false,
+  },
+  peopleRatedMe: [
+    {
+      userName: String,
+      rate: Number,
+    },
+  ],
+  rate: {
+    type: Number,
+    default: 5,
+  },
+  isAdmin: {
+    type: Boolean,
+    default: false,
+  },
+  postID: [
+    // [] => means regUser has array of posts (relation 1:M)
+    {
+      type: Schema.Types.ObjectId,
+    },
+  ],
+  postLimit: {
+    // regUser shall not exceed 4 posts per month
+    type: Number,
+    default: 0,
+  },
+  created: { type: Date, expires: 0 },
+});
+
+exports.User = mongoose.model("users", UserSchema);
+
+exports.Admin = mongoose.model("admins", AdminSchema);
+
+exports.RegisteredUser = mongoose.model("registeredUsers", RegisteredUserSchema);
