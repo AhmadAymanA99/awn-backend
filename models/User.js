@@ -45,7 +45,7 @@ const AdminSchema = new Schema({
 const RegisteredUserSchema = new Schema({
   confirmationEmail: {
     type: Boolean,
-    default: false,
+    default: true,
   },
   activationTokenEmail: {
     type: mongoose.Schema.Types.ObjectId,

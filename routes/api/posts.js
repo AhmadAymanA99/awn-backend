@@ -15,7 +15,16 @@ const validatePostInput = require("../../validation/post");
 // @desc    Tests post route
 // @access  Public
 router.get("/test", (req, res) => res.json({ msg: "Posts Works" }));
-
+// @route   GET api/posts/allposts
+// @desc    Get all posts
+// @access  Public
+router.get("/allposts", (req, res) => {
+  Post.find()
+    .sort({ date: -1 })
+    .limit() // no limit for now, show all
+    .then((posts) => res.json(posts))
+    .catch((err) => res.status(404).json({ nopostsfound: "No posts found" }));
+});
 // ******************************** Pagination *************************
 // @route   GET api/posts            ||  GET api/posts?page=..
 // @desc    Get all posts if page=0  ||  paginate posts if page>=1
@@ -90,102 +99,80 @@ router.get("/postNums", (req, res) => {
 router.get("/postid/:id", (req, res) => {
   Post.findById(req.params.id)
     .then((post) => res.json(post))
-    .catch((err) =>
-      res.status(404).json({ nopostfound: "No post found with that ID" })
-    );
+    .catch((err) => res.status(404).json({ nopostfound: "No post found with that ID" }));
 });
 
 // @route   POST api/posts
 // @desc    Create post
 // @access  Private
-router.post(
-  "/",
-  passport.authenticate("jwt", { session: false }),
-  (req, res) => {
-    RegisteredUse.findById(req.user.id).then((user) => {
-      if (user.postLimit < 5) {
-        //set max posts per month to be 5
-        const { errors, isValid } = validatePostInput(req.body);
-        // Check Validation
-        if (!isValid) {
-          // If any errors, send 400 with errors object
-          return res.status(400).json(errors);
-        }
-
-        const newPost = new Post({
-          user: req.user.id,
-          userName: req.user.userName,
-          title: req.body.title,
-          description: req.body.description,
-          tags: req.body.tags,
-          location: req.body.location,
-          categoryName: req.body.categoryName,
-          subCategory: req.body.subCategory,
-          status: req.body.status,
-          dueDate: req.body.dueDate,
-        });
-
-        RegisteredUse.findByIdAndUpdate(
-          { _id: req.user.id },
-          { $inc: { postLimit: 1 } }
-        ).then(newPost.save().then((post) => res.json(post)));
-      } else {
-        return res.status(400).json({
-          excededMaxNumPosts:
-            "You exceeded the maximum number of posts for this month.",
-        });
+router.post("/", passport.authenticate("jwt", { session: false }), (req, res) => {
+  RegisteredUse.findById(req.user.id).then((user) => {
+    if (user.postLimit < 5) {
+      //set max posts per month to be 5
+      const { errors, isValid } = validatePostInput(req.body);
+      // Check Validation
+      if (!isValid) {
+        // If any errors, send 400 with errors object
+        return res.status(400).json(errors);
       }
-    });
-  }
-);
+
+      const newPost = new Post({
+        user: req.user.id,
+        userName: req.user.userName,
+        title: req.body.title,
+        description: req.body.description,
+        tags: req.body.tags,
+        location: req.body.location,
+        categoryName: req.body.categoryName,
+        subCategory: req.body.subCategory,
+        status: req.body.status,
+        dueDate: req.body.dueDate,
+      });
+
+      RegisteredUse.findByIdAndUpdate({ _id: req.user.id }, { $inc: { postLimit: 1 } }).then(newPost.save().then((post) => res.json(post)));
+    } else {
+      return res.status(400).json({
+        excededMaxNumPosts: "You exceeded the maximum number of posts for this month.",
+      });
+    }
+  });
+});
 
 // @route   DELETE api/posts/:id
 // @desc    Delete post by id
 // @access  Private
-router.delete(
-  "/:id",
-  passport.authenticate("jwt", { session: false }),
-  (req, res) => {
-    Post.findById(req.params.id)
-      .then((post) => {
-        // Check for post owner
-        if (post.user.toString() !== req.user.id) {
-          return res.status(401).json({ notauthorized: "User not authorized" });
-        }
-        //if not => Delete
-        post.remove().then(() => res.json({ success: true }));
-      })
-      .catch((err) => res.status(404).json({ postnotfound: "No post found" }));
-  }
-);
+router.delete("/:id", passport.authenticate("jwt", { session: false }), (req, res) => {
+  Post.findById(req.params.id)
+    .then((post) => {
+      // Check for post owner
+      if (post.user.toString() !== req.user.id) {
+        return res.status(401).json({ notauthorized: "User not authorized" });
+      }
+      //if not => Delete
+      post.remove().then(() => res.json({ success: true }));
+    })
+    .catch((err) => res.status(404).json({ postnotfound: "No post found" }));
+});
 
 // @route   GET api/posts/user/:user
 // @desc    Get all posts of a certen user by his ID
 // @access  private
-router.get(
-  "/user/:user",
-  passport.authenticate("jwt", { session: false }),
-  (req, res) => {
-    Post.find({ user: req.params.user })
-      .sort({ date: -1 })
-      .then((post) => res.json(post))
-      .catch((err) => res.status(404).json({ nopostsfound: "No posts found" }));
-  }
-);
+router.get("/user/:user", passport.authenticate("jwt", { session: false }), (req, res) => {
+  Post.find({ user: req.params.user })
+    .sort({ date: -1 })
+    .then((post) => res.json(post))
+    .catch((err) => res.status(404).json({ nopostsfound: "No posts found" }));
+});
 
 // @route   GET api/posts/currentUser
 // @desc    Get all post of the current user
 // @access  private
-router.get(
-  "/currentUser",
-  passport.authenticate("jwt", { session: false }),
-  (req, res) => {
-    Post.find({ user: req.user.id })
-      .sort({ date: -1 })
-      .then((post) => res.json(post))
-      .catch((err) => res.status(404).json({ nopostsfound: "No posts found" }));
-  }
-);
+router.get("/currentUser", passport.authenticate("jwt", { session: false }), (req, res) => {
+  Post.find({ user: req.user.id })
+    .sort({ date: -1 })
+    .then((post) => res.json(post))
+    .catch((err) => res.status(404).json({ nopostsfound: "No posts found" }));
+});
 
 // @route   post api/posts/View/:postId
 // @desc    Increament numViews of post by 1
@@ -254,27 +241,21 @@ router.get("/donation/limit", (req, res) => {
 // @route   Post api/posts/update/:id
 // @desc    update post
 // @access  Private
-router.post(
-  "/update/:id",
-  passport.authenticate("jwt", { session: false }),
-  (req, res) => {
-    Post.findOneAndUpdate(
-      { _id: req.params.id },
-      {
-        title: req.body.title,
-        description: req.body.description,
-        tags: req.body.tags,
-        location: req.body.location,
-        categoryName: req.body.categoryName,
-        subCategory: req.body.subCategory,
-      }
-    )
-      .then((post) => res.json("post is successfully updated"))
-      .catch((err) =>
-        res.status(404).json({ nopostfound: "No post found with that ID" })
-      );
-  }
-);
+router.post("/update/:id", passport.authenticate("jwt", { session: false }), (req, res) => {
+  Post.findOneAndUpdate(
+    { _id: req.params.id },
+    {
+      title: req.body.title,
+      description: req.body.description,
+      tags: req.body.tags,
+      location: req.body.location,
+      categoryName: req.body.categoryName,
+      subCategory: req.body.subCategory,
+    }
+  )
+    .then((post) => res.json("post is successfully updated"))
+    .catch((err) => res.status(404).json({ nopostfound: "No post found with that ID" }));
+});
 
 // @route   Post api/posts/updateStatus/:id
 // @desc    update post status
@@ -286,9 +267,7 @@ router.post("/updateStatus/:id", (req, res) => {
     // ****************************************************************** //
     Post.findOneAndUpdate({ _id: req.params.id }, { status: req.body.status })
       .then((post) => res.json("Post Status is successfully updated"))
-      .catch((err) =>
-        res.status(404).json({ nopostfound: "No post found with that ID" })
-      );
+      .catch((err) => res.status(404).json({ nopostfound: "No post found with that ID" }));
   } else {
     res.status(404).json({ Error: "System Violation" });
   }
@@ -303,9 +282,7 @@ router.post("/resetPostLimit", (req, res) => {
   if (req.body.editCode == "Admin_AWN") {
     if (today.getDate() == 1) {
       // 1 = first day in month
-      RegisteredUse.updateMany({}, { $set: { postLimit: 0 } }).then((user) =>
-        res.json("Users' postLimit are reseted to zero")
-      );
+      RegisteredUse.updateMany({}, { $set: { postLimit: 0 } }).then((user) => res.json("Users' postLimit are reseted to zero"));
     } else {
       res.status(404).json({ notYet: "not the beginning of month." });
     }

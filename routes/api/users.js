@@ -108,7 +108,8 @@ router.post("/register", (req, res) => {
           if (err) throw err;
           newuser.password = hash;
           const transporter = nodemailer.createTransport({
-            service: "gmail",
+            host: "smtp.mailtrap.io",
+            port: 587,
             auth: {
               user: Keys.confirmationEmail,
               pass: Keys.confirmationPassword,
@@ -121,20 +122,20 @@ router.post("/register", (req, res) => {
             subject: "AWN Confirmation Email",
             text: `Please click here ${url}`,
           };
+          newuser
+            .save()
+            .then((user) => {
+              return res.status(200).json(user);
+            })
+            .catch((err) => res.json(err));
+          // transporter.sendMail(mailOptions, function (error, info) {
+          //   if (error) {
+          //     console.log(error);
+          //     return res.status(500).json({ msg: "email did not send correctly" });
+          //   } else {
 
-          transporter.sendMail(mailOptions, function (error, info) {
-            if (error) {
-              console.log(error);
-              return res.status(500).json({ msg: "email did not send correctly" });
-            } else {
-              newuser
-                .save()
-                .then((user) => {
-                  return res.status(200).json(user);
-                })
-                .catch((err) => res.json(err));
-            }
-          });
+          //   }
+          // });
         });
       });
     }
